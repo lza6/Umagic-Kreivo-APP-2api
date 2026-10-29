@@ -1,0 +1,16 @@
+# 反编译产物 / 样本（体积大、可再生）
+unz/
+apktool_s/
+apktool_full/
+jadx_out/
+*.apk
+*.log
+
+# 凭证与一次性 token 池（绝不入库）
+tokens.jsonl
+tokens.jsonl.tmp
+apikey.local
+
+__pycache__/
+*.pyc
+*.tmp
