@@ -1,52 +1,27 @@
 {
-  "concurrency": 8,
-  "wall": 2.2932093143463135,
-  "p50": 1.9026787281036377,
-  "p90": 1.905731201171875,
+  "concurrency": 3,
+  "wall": 1.9048290252685547,
+  "p50": 1.700401782989502,
+  "p90": 1.8981225490570068,
   "dist": {
-    "114": 1,
-    "EXC": 7
+    "EXC": 1,
+    "114": 2
   },
   "results": [
     {
-      "elapsed": 2.2828257083892822,
+      "elapsed": 1.8981225490570068,
+      "status": "EXC",
+      "msg": "HTTPSConnectionPool(host='ah.dailyjoypro.com', port=443): Max retries exceeded w"
+    },
+    {
+      "elapsed": 1.64619779586792,
       "status": "114",
       "msg": "no integrity_token or android_package_name"
     },
     {
-      "elapsed": 1.905719518661499,
-      "status": "EXC",
-      "msg": "HTTPSConnectionPool(host='ah.dailyjoypro.com', port=443): Max retries exceeded w"
-    },
-    {
-      "elapsed": 1.9014487266540527,
-      "status": "EXC",
-      "msg": "HTTPSConnectionPool(host='ah.dailyjoypro.com', port=443): Max retries exceeded w"
-    },
-    {
-      "elapsed": 1.8993887901306152,
-      "status": "EXC",
-      "msg": "HTTPSConnectionPool(host='ah.dailyjoypro.com', port=443): Max retries exceeded w"
-    },
-    {
-      "elapsed": 1.9026787281036377,
-      "status": "EXC",
-      "msg": "HTTPSConnectionPool(host='ah.dailyjoypro.com', port=443): Max retries exceeded w"
-    },
-    {
-      "elapsed": 1.905731201171875,
-      "status": "EXC",
-      "msg": "HTTPSConnectionPool(host='ah.dailyjoypro.com', port=443): Max retries exceeded w"
-    },
-    {
-      "elapsed": 1.8856747150421143,
-      "status": "EXC",
-      "msg": "HTTPSConnectionPool(host='ah.dailyjoypro.com', port=443): Max retries exceeded w"
-    },
-    {
-      "elapsed": 1.9017932415008545,
-      "status": "EXC",
-      "msg": "HTTPSConnectionPool(host='ah.dailyjoypro.com', port=443): Max retries exceeded w"
+      "elapsed": 1.700401782989502,
+      "status": "114",
+      "msg": "no integrity_token or android_package_name"
     }
   ]
 }

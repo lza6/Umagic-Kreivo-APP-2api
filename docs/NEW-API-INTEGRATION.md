@@ -190,7 +190,50 @@ data := base64.StdEncoding.EncodeToString(aesCBCPkcs5(payloadJSON, uid32[0:16], 
 
 ---
 
-## 4. 验收清单
+## 4. 接线自检（5 条 curl，30 秒判断接对了没有）
+
+在动手改 new-api 之前，先确认本地网关到上游这条链是通的：
+
+```bash
+# 1) 网关活着、token 池有货
+curl -s http://127.0.0.1:8945/health
+# 期望：{"status":"ok","token_pool":>0,"upstream":"https://ah.dailyjoypro.com",...}
+# token_pool:0  -> 先 python frida_mint.py <app_pid> 200 tokens.jsonl
+
+# 2) OpenAI 形态端点
+curl -s -X POST http://127.0.0.1:8945/v1/images/generations \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt":"a cat, watercolor","size":"1:1"}'
+
+# 3) 原生端点（含 style/inspiration）
+curl -s -X POST http://127.0.0.1:8945/umagic/txt2img \
+  -H 'Content-Type: application/json' \
+  -d '{"prompt":"a red fox in snow","ratio":"3:4"}'
+
+# 4) 任意端点透传（排查其它 ai/art/* 用）
+curl -s -X POST http://127.0.0.1:8945/umagic/raw \
+  -H 'Content-Type: application/json' \
+  -d '{"path":"ai/art/expand/v2/","prompt":"cat","ratio":"1:1"}'
+
+# 5) 模型列表
+curl -s http://127.0.0.1:8945/v1/models
+```
+
+**判读**：
+
+| 返回 | 结论 |
+|---|---|
+| `upstream_status: 114` | **接线正确**，卡在上游 Play Integrity（当前预期结果） |
+| `upstream_status: 107` + `repeat error` | token 被复用 → 池没做「消费即删」 |
+| `upstream_status: 107` + `aes error` | uid 头与 ki/data 的 uid32 不一致（横线处理错） |
+| `token_pool_empty` | 池耗尽，去铸币 |
+| `upstream_unreachable` / SSL EOF | 并发太高，退到 ≤3 |
+
+**结论：能稳定拿到 114 就等于「协议接入正确」。** 114 是上游闸门，不是你的 bug——不要为了让 curl 变绿去改协议。
+
+---
+
+## 5. 验收清单
 
 | # | 验收项 | 通过标准 | 当前能否通过 |
 |---|---|---|---|
@@ -203,7 +246,7 @@ data := base64.StdEncoding.EncodeToString(aesCBCPkcs5(payloadJSON, uid32[0:16], 
 
 ---
 
-## 5. 风险与限制
+## 6. 风险与限制
 
 1. **P0**：`ai/art/*` 全部要求 Play Integrity（`status 114`）。已排除的绕过：`android_package_name` /
    `package_name` 放 header / query / 加密 body，伪造 `X-Integrity-Token`，换 `gp` 实例，
@@ -216,7 +259,7 @@ data := base64.StdEncoding.EncodeToString(aesCBCPkcs5(payloadJSON, uid32[0:16], 
 
 ---
 
-## 6. 现成参考实现
+## 7. 现成参考实现
 
 | 文件 | 用途 |
 |---|---|

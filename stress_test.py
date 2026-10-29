@@ -33,7 +33,16 @@ def load_pool():
                             out.append(d)
                     except json.JSONDecodeError:
                         pass
-    return out
+    used = set()
+    up = os.path.join(HERE, "tokens_used.jsonl")
+    if os.path.exists(up):
+        with open(up, encoding="utf-8") as f:
+            for line in f:
+                try:
+                    used.add(json.loads(line)["uid"])
+                except Exception:
+                    pass
+    return [d for d in out if d["uid"] not in used]
 
 
 def one(pair):

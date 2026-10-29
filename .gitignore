@@ -14,3 +14,4 @@ apikey.local
 __pycache__/
 *.pyc
 *.tmp
+tokens_used.jsonl

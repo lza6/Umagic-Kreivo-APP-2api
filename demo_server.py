@@ -18,17 +18,19 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import proto
 
 PORT = int(os.environ.get("PORT", "8931"))
-TOKENS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tokens.jsonl")
+_HERE = os.path.dirname(os.path.abspath(__file__))
+TOKENS_PATH = os.path.join(_HERE, "tokens.jsonl")
+USED_PATH = os.path.join(_HERE, "tokens_used.jsonl")
 
 _lock = threading.Lock()
-_pool = []
 _stats = {"ok": 0, "fail": 0, "integrity_blocked": 0, "token_rejected": 0, "other": 0}
 
 
-def _load_pool():
-    if not os.path.exists(TOKENS_PATH):
-        return
-    with open(TOKENS_PATH, encoding="utf-8") as f:
+def _read_jsonl(path):
+    out = []
+    if not os.path.exists(path):
+        return out
+    with open(path, encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if not line:
@@ -36,23 +38,45 @@ def _load_pool():
             try:
                 d = json.loads(line)
                 if d.get("uid") and d.get("token"):
-                    _pool.append(d)
+                    out.append(d)
             except json.JSONDecodeError:
                 pass
+    return out
+
+
+def _used_uids():
+    """Append-only ledger of consumed uids.  Never rewrite tokens.jsonl:
+    two processes rewriting the same file resurrect already-burned pairs."""
+    used = set()
+    if not os.path.exists(USED_PATH):
+        return used
+    with open(USED_PATH, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                used.add(json.loads(line)["uid"])
+            except (json.JSONDecodeError, KeyError):
+                pass
+    return used
+
+
+def pool_remaining():
+    return sum(1 for d in _read_jsonl(TOKENS_PATH) if d["uid"] not in _used_uids())
 
 
 def take_token():
-    """Pop one single-use pair and persist the removal so the file is the truth."""
+    """Claim the first unused pair, then append it to the used-ledger."""
     with _lock:
-        if not _pool:
-            return None
-        pair = _pool.pop(0)
-        tmp = TOKENS_PATH + ".tmp"
-        with open(tmp, "w", encoding="utf-8") as f:
-            for d in _pool:
-                f.write(json.dumps(d) + "\n")
-        os.replace(tmp, TOKENS_PATH)
-        return pair
+        used = _used_uids()
+        for d in _read_jsonl(TOKENS_PATH):
+            if d["uid"] in used:
+                continue
+            with open(USED_PATH, "a", encoding="utf-8") as f:
+                f.write(json.dumps({"uid": d["uid"]}) + "\n")
+            return d
+        return None
 
 
 def call_upstream(payload, path="ai/art/txt2img/v2/", base=None):
@@ -154,7 +178,7 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == "/health":
             return self._send(200, {
                 "status": "ok",
-                "token_pool": len(_pool),
+                "token_pool": pool_remaining(),
                 "upstream": proto.BASE_AH,
                 "stats": _stats,
                 "blocker": "ah.dailyjoypro.com 的 ai/art/* 要求 Play Integrity (status 114)",
@@ -205,8 +229,10 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main():
-    _load_pool()
-    print(f"token pool: {len(_pool)}  ->  http://127.0.0.1:{PORT}/")
+    left = pool_remaining()
+    print(f"token pool: {left}  ->  http://127.0.0.1:{PORT}/")
+    if left == 0:
+        print("WARN: 池为空，先跑  python frida_mint.py <app_pid> 200 tokens.jsonl")
     print(f"upstream: {proto.BASE_AH}   (ai/art/* 需要 Play Integrity)")
     ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()
 

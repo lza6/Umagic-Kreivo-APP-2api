@@ -20,6 +20,12 @@ python stress_test.py 3                           # 3 并发压测
 
 无设备时网关会在 `/health` 报 `token_pool: 0`，请求返回 503 `token_pool_empty`。
 
+**一次性 token 账本**：`tokens.jsonl` 是只增不改的池，`tokens_used.jsonl` 是追加式「已用」账本。
+网关与压测共用这一对文件，任一进程只 append 账本、**绝不回写池文件**——
+否则两个进程各自持有内存副本再整文件回写，会把已烧掉的 token 复活，表现为 `repeat error`（踩过）。
+
+接线自检见 `docs/NEW-API-INTEGRATION.md` §4 的 5 条 curl。
+
 ---
 
 ## 实测证据（2026-10-30，本机 + emulator-5556）
