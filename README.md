@@ -72,3 +72,24 @@ python stress_test.py 3                           # 3 并发压测
 说明不是我们构造错误，而是 Mod 包在模拟器上拿不到 Play Integrity token。
 
 **结论**：纯协议侧无解。要出图必须持有原版签名 App 在真机 Play 环境下产生的 integrity token。
+
+---
+
+## 仓库
+
+- 主镜像：`lza6/Umagic-Kreivo-APP-2api` 分支 **`hardstone-v1.12.0-gateway`**
+  https://github.com/lza6/Umagic-Kreivo-APP-2api/tree/hardstone-v1.12.0-gateway
+- 独立仓库 `lza6/Umagic-v1.12-Hardstone-APP-2api` 创建时被 GitHub
+  `createRepository` abuse 限流拒绝，待限流窗口过后重试：
+
+```bash
+gh repo create lza6/Umagic-v1.12-Hardstone-APP-2api --public \
+  --source=. --remote=dedicated --push
+```
+
+---
+
+## new-api 对接
+
+见 **`docs/NEW-API-INTEGRATION.md`**（自包含手册：6 条协议速查、19 个端点、
+状态码映射、路线 A 挂 Python 网关、路线 B 原生渠道 type 74 的 6 处改动、验收清单）。
